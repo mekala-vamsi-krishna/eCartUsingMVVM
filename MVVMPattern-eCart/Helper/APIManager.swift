@@ -5,4 +5,89 @@
 //  Created by Mekala Vamsi Krishna on 14/02/23.
 //
 
-import Foundation
+import UIKit
+
+// singlton class :- It can access by both by creating object and as well as shared instance outside the class
+// Singlton class :- Only can access by shared instance outside the class
+// final keyword :- final class cannot be inherites by the other classes
+
+//typealias Handler = (Result<[Product], DataError>) -> Void
+typealias Handler<T> = (Result<T, DataError>) -> Void
+
+enum DataError: Error {
+    case invalidResponse
+    case invalidURl
+    case invalidData
+    case network(Error?)
+}
+
+final class APIManager {
+    
+    static let shared = APIManager()
+    private init() {} // Due to this private initializer the class becomes 'S'inglton class
+    
+    func request<T: Decodable>(
+        modelType: T.Type,
+        type: EndPointType,
+        completion: @escaping Handler<T>
+    ) {
+        guard let url = URL(string: Constants.API.productURL) else {
+            completion(.failure(.invalidURl))
+            return
+        }
+        
+        URLSession.shared.dataTask(with: url) { data, response, error in
+            
+//            guard let data = data, error == nil else { return }
+            guard let data, error == nil else { // New style
+                completion(.failure(.invalidData))
+                return
+            }
+            guard let response = response as? HTTPURLResponse, 200 ... 299 ~= response.statusCode else {
+                completion(.failure(.invalidResponse))
+                return
+            }
+            
+            do {
+                let products = try JSONDecoder().decode(modelType , from: data)
+                completion(.success(products))
+            } catch {
+                completion(.failure(.network(error)))
+            }
+            
+        }.resume()
+    }
+    
+    /*
+    func fetchProducts(completion: @escaping Handler) {
+        
+        guard let url = URL(string: Constants.API.productURL) else {
+            completion(.failure(.invalidURl))
+            return
+        }
+        
+        URLSession.shared.dataTask(with: url) { data, response, error in
+            
+//            guard let data = data, error == nil else { return }
+            guard let data, error == nil else { // New style
+                completion(.failure(.invalidData))
+                return
+            }
+            guard let response = response as? HTTPURLResponse, 200 ... 299 ~= response.statusCode else {
+                completion(.failure(.invalidResponse))
+                return
+            }
+            
+            do {
+                let products = try JSONDecoder().decode([Product].self, from: data)
+                completion(.success(products))
+            } catch {
+                completion(.failure(.network(error)))
+            }
+            
+        }.resume()
+        
+    }
+     */
+    
+}
