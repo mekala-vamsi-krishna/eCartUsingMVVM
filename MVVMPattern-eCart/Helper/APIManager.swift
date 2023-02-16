@@ -26,7 +26,7 @@ final class APIManager {
     static let shared = APIManager()
     private init() {} // Due to this private initializer the class becomes 'S'inglton class
     
-    func request<T: Decodable>(
+    func request<T: Codable>(
         modelType: T.Type,
         type: EndPointType,
         completion: @escaping Handler<T>
@@ -35,6 +35,15 @@ final class APIManager {
             completion(.failure(.invalidURl))
             return
         }
+        
+        var request = URLRequest(url: url)
+        request.httpMethod = type.method.rawValue
+        
+        if let parameters = type.body {
+            request.httpBody = try? JSONEncoder().encode(parameters)
+        }
+        
+        request.allHTTPHeaderFields = type.headers
         
         URLSession.shared.dataTask(with: url) { data, response, error in
             
@@ -56,6 +65,12 @@ final class APIManager {
             }
             
         }.resume()
+    }
+    
+    static var commonHeaders: [String: String] {
+        return [
+            "Content-Type": "application/json"
+        ]
     }
     
     /*

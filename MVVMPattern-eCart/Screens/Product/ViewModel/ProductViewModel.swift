@@ -33,17 +33,28 @@ final class ProductViewModel {
     
     func fetchProducts() {
         self.eventHandler?(.loading)
-        APIManager.shared.request(modelType: [Product].self, type: EndPointItems.products) { result in
-                self.eventHandler?(.stopLoading)
-                switch result {
-                case .success(let products):
-                    print(products)
-                    self.products = products
-                    self.eventHandler?(.dataLoaded)
-                case .failure(let error):
-                    self.eventHandler?(.error(error))
-                }
+        APIManager.shared.request(modelType: [Product].self, type: ProductEndPoint.products) { result in
+            self.eventHandler?(.stopLoading)
+            switch result {
+            case .success(let products):
+                print(products)
+                self.products = products
+                self.eventHandler?(.dataLoaded)
+            case .failure(let error):
+                self.eventHandler?(.error(error))
             }
+        }
+    }
+    
+    func addProduct(parameters: AddProduct) {
+        APIManager.shared.request(modelType: AddProduct.self, type: ProductEndPoint.addProduct(product: parameters)) { results in
+            switch results {
+            case .success(let product):
+                self.eventHandler?(.newProductAdded(product: product))
+            case .failure(let error):
+                self.eventHandler?(.error(error))
+            }
+        }
     }
     
 }
@@ -55,6 +66,7 @@ extension ProductViewModel {
         case stopLoading
         case dataLoaded
         case error(Error?)
+        case newProductAdded(product: AddProduct)
     }
     
 }
